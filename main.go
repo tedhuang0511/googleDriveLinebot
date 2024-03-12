@@ -1,4 +1,4 @@
-package firstProject
+package main
 
 import (
 	"context"
@@ -24,11 +24,11 @@ var (
 
 func init() {
 	ssmsvc = NewSSMClient()
-	lineSecret, err := ssmsvc.Param("CHANNEL_SECRET", true).GetValue()
+	lineSecret, err := ssmsvc.Param("PTT_CHANNEL_SECRET", true).GetValue()
 	if err != nil {
 		log.Println(err)
 	}
-	lineAccessToken, err := ssmsvc.Param("CHANNEL_ACCESS_TOKEN", true).GetValue()
+	lineAccessToken, err := ssmsvc.Param("PTT_CHANNEL_ACCESS_TOKEN", true).GetValue()
 	if err != nil {
 		log.Println(err)
 	}
