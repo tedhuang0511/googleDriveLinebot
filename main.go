@@ -88,6 +88,7 @@ func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 }
 
 func main() {
+	fmt.Println("Hello World!!")
 	lambda.Start(Handler)
 }
 
