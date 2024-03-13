@@ -2,15 +2,10 @@ package v1
 
 import (
 	"firstProject/internal/app"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/drive/v3"
-	"log"
-	"net/http"
-	"os"
-
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
+	"log"
+	"net/http"
 )
 
 func Callback(app *app.Application) gin.HandlerFunc {
@@ -33,14 +28,8 @@ func Callback(app *app.Application) gin.HandlerFunc {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
 					if message.Text == "login" {
-						config := &oauth2.Config{
-							ClientID:     os.Getenv("ClientID"),
-							ClientSecret: os.Getenv("ClientSecret"), // from https://console.developers.google.com/project/<your-project-id>/apiui/credential
-							Endpoint:     google.Endpoint,
-							Scopes:       []string{drive.DriveScope},
-							RedirectURL:  os.Getenv("RedirectURL"),
-						}
-						authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline) //oauth2.ApprovalForce
+						lineID := event.Source.UserID
+						authURL := app.DriveService.LoginURL(ctx, lineID)
 						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(authURL)).Do(); err != nil {
 							log.Println(err)
 						}

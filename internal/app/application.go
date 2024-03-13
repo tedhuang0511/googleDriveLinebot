@@ -26,6 +26,7 @@ func NewApplication(ctx context.Context, dynamodb dynamodb.DynamodbI, oauth goog
 		}),
 		DriveService: serviceDrive.NewGoogleDriveService(ctx, serviceDrive.GoogleDriveServiceParam{
 			DriveServiceGoogleOA: oauth,
+			DriveServiceDynamodb: dynamodb,
 		}),
 	}
 	return app
