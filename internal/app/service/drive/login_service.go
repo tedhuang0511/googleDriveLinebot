@@ -10,15 +10,13 @@ func (dr *GoogleDriveService) Login(ctx context.Context, lineID string, authCode
 	if err != nil {
 		return err
 	}
-
 	dToken := dynamodb.GoogleOAuthToken{
 		PK:           lineID,
 		AccessToken:  tok.AccessToken,
 		TokenType:    tok.TokenType,
 		RefreshToken: tok.RefreshToken,
-		Expiry:       tok.Expiry.String(),
+		Expiry:       tok.Expiry,
 	}
-
 	err = dr.driveServiceDynamodb.AddGoogleOAuthToken(dToken)
 	if err != nil {
 		return err

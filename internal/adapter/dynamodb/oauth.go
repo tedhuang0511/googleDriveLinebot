@@ -12,11 +12,11 @@ import (
 )
 
 type GoogleOAuthToken struct {
-	PK           string `dynamodbav:"PK"`
-	AccessToken  string `dynamodbav:"access_token"`
-	TokenType    string `dynamodbav:"token_type"`
-	RefreshToken string `dynamodbav:"refresh_token"`
-	Expiry       string `dynamodbav:"expiry"`
+	PK           string    `dynamodbav:"PK"`
+	AccessToken  string    `dynamodbav:"access_token"`
+	TokenType    string    `dynamodbav:"token_type"`
+	RefreshToken string    `dynamodbav:"refresh_token"`
+	Expiry       time.Time `dynamodbav:"expiry"`
 }
 
 func (basics TableBasics) CreateGoogleOAuthTable() (*types.TableDescription, error) {
