@@ -26,8 +26,8 @@ func NewGoogleOAuth(clientID string, clientSecret string, redirectURL string) *G
 	}
 }
 
-func (oa *GoogleOAuth) OAuthLoginURL() (oauthURL string) {
-	oauthURL = oa.Config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+func (oa *GoogleOAuth) OAuthLoginURL(lineID string) (oauthURL string) {
+	oauthURL = oa.Config.AuthCodeURL(lineID, oauth2.AccessTypeOffline, oauth2.ApprovalForce) // oauth2.ApprovalForce
 	return oauthURL
 }
 
