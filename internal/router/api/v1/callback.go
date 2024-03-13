@@ -48,6 +48,30 @@ func Callback(app *app.Application) gin.HandlerFunc {
 						}
 						return
 					}
+					if message.Text == "list folder" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.ListMyDriveFolders(ctx, lineID)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintln(res))).Do(); err != nil {
+							log.Println(err)
+						}
+						return
+					}
+					if message.Text == "list shared" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.ListSharedFolders(ctx, lineID)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintln(res))).Do(); err != nil {
+							log.Println(err)
+						}
+						return
+					}
 					samplePK, err := app.SampleService.Sample(ctx, message.Text)
 					if err != nil {
 						log.Println(err)
