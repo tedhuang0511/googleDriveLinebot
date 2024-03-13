@@ -80,6 +80,23 @@ func Callback(app *app.Application) gin.HandlerFunc {
 					if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(samplePK)).Do(); err != nil {
 						log.Println(err)
 					}
+
+				case *linebot.FileMessage:
+					lineID := event.Source.UserID
+					content, err := app.LineBotClient.GetMessageContent(message.ID).Do()
+					if err != nil {
+						log.Println(err)
+						return
+					}
+
+					app.DriveService.UploadFile(ctx, lineID, message.FileName, content.Content)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("成功上傳: "+message.FileName)).Do(); err != nil {
+						log.Println(err)
+					}
 				}
 			}
 		}
