@@ -34,3 +34,63 @@ func (dr *GoogleDriveService) ListFiles(ctx context.Context, lineID string) (map
 
 	return result, nil
 }
+
+func (dr *GoogleDriveService) ListMyDriveFolders(ctx context.Context, lineID string) (map[string]string, error) {
+
+	dToken, err := dr.driveServiceDynamodb.GetGoogleOAuthToken(lineID)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	tok := oauth2.Token{
+		AccessToken:  dToken.AccessToken,
+		TokenType:    dToken.TokenType,
+		RefreshToken: dToken.RefreshToken,
+		Expiry:       dToken.Expiry,
+	}
+	d, err := dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	result, err := d.ListMyDriveFolders()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (dr *GoogleDriveService) ListSharedFolders(ctx context.Context, lineID string) (map[string]string, error) {
+
+	dToken, err := dr.driveServiceDynamodb.GetGoogleOAuthToken(lineID)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	tok := oauth2.Token{
+		AccessToken:  dToken.AccessToken,
+		TokenType:    dToken.TokenType,
+		RefreshToken: dToken.RefreshToken,
+		Expiry:       dToken.Expiry,
+	}
+	d, err := dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	result, err := d.ListSharedFolders()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return result, nil
+}
