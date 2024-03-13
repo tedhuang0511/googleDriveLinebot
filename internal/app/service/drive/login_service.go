@@ -3,6 +3,8 @@ package drive
 import (
 	"context"
 	"firstProject/internal/adapter/dynamodb"
+	domainDrive "firstProject/internal/domain/drive"
+	"log"
 )
 
 func (dr *GoogleDriveService) Login(ctx context.Context, lineID string, authCode string) error {
@@ -27,5 +29,10 @@ func (dr *GoogleDriveService) Login(ctx context.Context, lineID string, authCode
 
 func (dr *GoogleDriveService) LoginURL(ctx context.Context, lineID string) string {
 	oauthURL := dr.driveServiceGoogleOA.OAuthLoginURL(lineID)
-	return oauthURL
+	resURL, err := domainDrive.AppendOpenExternalBrowserParam(oauthURL)
+	if err != nil {
+		log.Println("Error:", err)
+		return ""
+	}
+	return resURL
 }
