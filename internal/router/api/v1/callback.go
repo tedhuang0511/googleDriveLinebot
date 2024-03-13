@@ -2,6 +2,7 @@ package v1
 
 import (
 	"firstProject/internal/app"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"log"
@@ -31,6 +32,18 @@ func Callback(app *app.Application) gin.HandlerFunc {
 						lineID := event.Source.UserID
 						authURL := app.DriveService.LoginURL(ctx, lineID)
 						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(authURL)).Do(); err != nil {
+							log.Println(err)
+						}
+						return
+					}
+					if message.Text == "list" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.ListFiles(ctx, lineID)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintln(res))).Do(); err != nil {
 							log.Println(err)
 						}
 						return
