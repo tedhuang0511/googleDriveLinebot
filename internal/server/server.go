@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"firstProject/internal/adapter/dynamodb"
+	"firstProject/internal/adapter/google"
 	"firstProject/internal/adapter/ssm"
 	"firstProject/internal/app"
 	"firstProject/internal/router"
@@ -32,19 +33,37 @@ func initRouter(rootCtx context.Context, app *app.Application) (ginRouter *gin.E
 	return ginRouter
 }
 
+func mustGetValue(parameters map[string]string, key string) string {
+	value, ok := parameters[key]
+	if !ok {
+		log.Fatalf("%s not found. Exiting...\n", key)
+	}
+	return value
+}
+
 func NewGinLambda() *ginadapter.GinLambda {
 	rootCtx, _ := context.WithCancel(context.Background()) //nolint
 	ssmsvc := ssm.NewSSM()
 
-	lineSecret, err := ssmsvc.FindParameter(rootCtx, ssmsvc.Client, "CHANNEL_SECRET")
+	parameterNames := []string{
+		"PTT_CHANNEL_SECRET",
+		"PTT_CHANNEL_ACCESS_TOKEN",
+		"GOOGLE_CLIENT_ID",
+		"GOOGLE_CLIENT_SECRET",
+		"REDIRECT_URL",
+	}
+
+	parameters, err := ssmsvc.FindParameters(rootCtx, ssmsvc.Client, parameterNames)
 	if err != nil {
 		log.Println(err)
 	}
 
-	lineAccessToken, err := ssmsvc.FindParameter(rootCtx, ssmsvc.Client, "CHANNEL_ACCESS_TOKEN")
-	if err != nil {
-		log.Println(err)
-	}
+	lineSecret := mustGetValue(parameters, "PTT_CHANNEL_SECRET")
+	lineAccessToken := mustGetValue(parameters, "PTT_CHANNEL_ACCESS_TOKEN")
+	googleClientID := mustGetValue(parameters, "GOOGLE_CLIENT_ID")
+	googleClientSecret := mustGetValue(parameters, "GOOGLE_CLIENT_SECRET")
+	redirectURL := mustGetValue(parameters, "REDIRECT_URL")
+
 	lineClientLambda, err := linebot.New(lineSecret, lineAccessToken)
 	if err != nil {
 		log.Fatal(err)
@@ -53,7 +72,9 @@ func NewGinLambda() *ginadapter.GinLambda {
 
 	db := dynamodb.NewTableBasics("google-oauth")
 
-	app := app.NewApplication(rootCtx, db, lineClientLambda)
+	oauth := google.NewGoogleOAuth(googleClientID, googleClientSecret, redirectURL)
+
+	app := app.NewApplication(rootCtx, db, oauth, lineClientLambda)
 	ginRouter := initRouter(rootCtx, app)
 	return ginadapter.New(ginRouter)
 }
@@ -72,8 +93,10 @@ func StartNgrokServer() {
 	// 初始化DynamoDB連接，然後切換到本地DynamoDB
 	db := dynamodb.NewTableBasics("google-oauth")
 	db.DynamoDbClient = dynamodb.CreateLocalClient(8000)
+
+	oauth := google.NewGoogleOAuth(os.Getenv("ClientID"), os.Getenv("ClientSecret"), os.Getenv("RedirectURL"))
 	// 初始化Application
-	app := app.NewApplication(rootCtx, db, lineClient)
+	app := app.NewApplication(rootCtx, db, oauth, lineClient)
 	// 初始化Gin路由
 	ginRouter := initRouter(rootCtx, app)
 
