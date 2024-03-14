@@ -2,6 +2,7 @@ package v1
 
 import (
 	"firstProject/internal/app"
+	domainDrive "firstProject/internal/domain/drive"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
@@ -71,6 +72,51 @@ func Callback(app *app.Application) gin.HandlerFunc {
 							log.Println(err)
 						}
 						return
+					}
+					if message.Text == "test" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.TestFolderCarousel(ctx, lineID)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err := app.LineBotClient.ReplyMessage(
+							event.ReplyToken,
+							linebot.NewFlexMessage("測試Flex Carousel", res.CarouselContainer),
+						).Do(); err != nil {
+							log.Println(err)
+							return
+						}
+					}
+					if message.Text == "mydrive" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.ListFolderCarousel(ctx, lineID, domainDrive.PersonalFolder)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err := app.LineBotClient.ReplyMessage(
+							event.ReplyToken,
+							linebot.NewFlexMessage("測試Flex Carousel", res.CarouselContainer),
+						).Do(); err != nil {
+							log.Println(err)
+							return
+						}
+					}
+					if message.Text == "shared" {
+						lineID := event.Source.UserID
+						res, err := app.DriveService.ListFolderCarousel(ctx, lineID, domainDrive.SharedFolder)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						if _, err := app.LineBotClient.ReplyMessage(
+							event.ReplyToken,
+							linebot.NewFlexMessage("測試Flex Carousel", res.CarouselContainer),
+						).Do(); err != nil {
+							log.Println(err)
+							return
+						}
 					}
 					if message.Text == "flex carousel" {
 						contents := &linebot.CarouselContainer{
