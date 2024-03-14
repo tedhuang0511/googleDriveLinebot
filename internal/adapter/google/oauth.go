@@ -41,7 +41,7 @@ func (oa *GoogleOAuth) UserOAuthToken(authCode string) (*oauth2.Token, error) {
 }
 
 func (oa *GoogleOAuth) NewGoogleDrive(ctx context.Context, tok *oauth2.Token) (*GoogleDrive, error) {
-	client := oa.Config.Client(ctx, tok)
+	client := oa.Config.Client(context.Background(), tok)
 	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Printf("Unable to retrieve Drive client: %v", err)

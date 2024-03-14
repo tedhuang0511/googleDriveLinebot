@@ -112,26 +112,29 @@ func (dr *GoogleDriveService) UploadFile(ctx context.Context, lineID string, fil
 		Expiry:       dToken.Expiry,
 	}
 
-	_, err = dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
+	d, err := dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	_, err = domainDrive.SaveContent(content)
+	file, err := domainDrive.SaveContent(content)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	//log.Println("START Upload File To Drive")
-	//// 假設預設的儲存路徑
-	//folderID := "1kpLZfvk9XmSr4xtDvczAqYHIF8P3r8bk"
-	//err = d.UploadFile(folderID, fileName, file)
-	//if err != nil {
-	//	log.Println("err:", err)
-	//	return err
-	//}
+	log.Println("START Upload File To Drive")
+
+	folderID := dToken.Info["upload_folder_id"].(string)
+	// 假設預設的儲存路徑
+	folderID = "1a17lQuvZCjPcBj_UoNryg0tdLr7lb1islzFtWNOZnqTxzuW6Am0nJ67HzxdzPBsp4gP1jPmQ"
+
+	err = d.UploadFile(folderID, fileName, file)
+	if err != nil {
+		log.Println("err:", err)
+		return err
+	}
 	return nil
 
 }

@@ -18,6 +18,8 @@ func (dr *GoogleDriveService) Login(ctx context.Context, lineID string, authCode
 		TokenType:    tok.TokenType,
 		RefreshToken: tok.RefreshToken,
 		Expiry:       tok.Expiry,
+		Info: map[string]interface{}{
+			"upload_folder_id": ""},
 	}
 	err = dr.driveServiceDynamodb.AddGoogleOAuthToken(dToken)
 	if err != nil {
