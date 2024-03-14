@@ -7,6 +7,7 @@ import (
 	"golang.org/x/oauth2"
 	"io"
 	"log"
+	"strings"
 )
 
 func (dr *GoogleDriveService) ListFiles(ctx context.Context, lineID string) (map[string]string, error) {
@@ -239,4 +240,131 @@ func (dr *GoogleDriveService) ListFolderCarousel(ctx context.Context, lineID str
 	carousel := domainDrive.NewFolderCarousel(params)
 
 	return &carousel, err
+}
+
+func (dr *GoogleDriveService) ListSelectedFolderCarousel(ctx context.Context, lineID string, folderID string) (*domainDrive.FolderCarousel, error) {
+	dToken, err := dr.driveServiceDynamodb.GetGoogleOAuthToken(lineID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	tok := oauth2.Token{
+		AccessToken:  dToken.AccessToken,
+		TokenType:    dToken.TokenType,
+		RefreshToken: dToken.RefreshToken,
+		Expiry:       dToken.Expiry,
+	}
+	d, err := dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var params domainDrive.NewFolderCarouselParam
+
+	// 當前目錄下的自己，才能看到資料夾下的檔案
+	folderList, err := d.ListFolderByID(folderID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	currentPath, err := d.FindFolderPathByID(folderID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	currentFile, err := d.ListFilesByID(folderID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	segments := strings.Split(currentPath, "/")
+	currentName := segments[len(segments)-2]
+
+	params.BubbleParams = append(params.BubbleParams, domainDrive.NewFolderBubbleParam{
+		Type:          "打開資料夾",
+		Name:          currentName,
+		Path:          currentPath,
+		ID:            folderID,
+		InsideFolderM: folderList,
+		FileM:         currentFile,
+	})
+
+	for folderID, name := range folderList {
+		path, err := d.FindFolderPathByID(folderID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		insideFolderM, err := d.ListFolderByID(folderID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		fileM, err := d.ListFilesByID(folderID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		param := domainDrive.NewFolderBubbleParam{
+			Type:          "子資料夾",
+			Name:          name,
+			Path:          path,
+			ID:            folderID,
+			InsideFolderM: insideFolderM,
+			FileM:         fileM,
+		}
+		params.BubbleParams = append(params.BubbleParams, param)
+	}
+
+	carousel := domainDrive.NewFolderCarousel(params)
+
+	return &carousel, err
+}
+
+func (dr *GoogleDriveService) SetUploadPath(ctx context.Context, lineID string, folderID string) error {
+	dToken, err := dr.driveServiceDynamodb.GetGoogleOAuthToken(lineID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	dToken.PK = lineID
+	dToken.Info = map[string]interface{}{
+		"upload_folder_id": folderID,
+	}
+
+	_, err = dr.driveServiceDynamodb.TxUpdateGoogleOAuthToken(dToken)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func (dr *GoogleDriveService) GetUploadPath(ctx context.Context, lineID string) (string, error) {
+	dToken, err := dr.driveServiceDynamodb.GetGoogleOAuthToken(lineID)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	folderID := dToken.Info["upload_folder_id"]
+
+	tok := oauth2.Token{
+		AccessToken:  dToken.AccessToken,
+		TokenType:    dToken.TokenType,
+		RefreshToken: dToken.RefreshToken,
+		Expiry:       dToken.Expiry,
+	}
+
+	d, err := dr.driveServiceGoogleOA.NewGoogleDrive(ctx, &tok)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	path, err := d.FindFolderPathByID(folderID.(string))
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	return path, nil
 }

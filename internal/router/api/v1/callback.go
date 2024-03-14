@@ -8,6 +8,7 @@ import (
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 func Callback(app *app.Application) gin.HandlerFunc {
@@ -26,10 +27,55 @@ func Callback(app *app.Application) gin.HandlerFunc {
 		}
 
 		for _, event := range events {
+			if event.Type == linebot.EventTypePostback {
+				// 如果是 Postback 事件，取得 postback 資料
+				postbackData := event.Postback.Data
+				log.Printf("Postback data: %s", postbackData)
+				// 解析 postback 資料
+				values, err := url.ParseQuery(postbackData)
+				if err != nil {
+					log.Printf("Error parsing postback data: %v", err)
+					return
+				}
+				// 取得特定參數的值，setFolder || openFolder
+				action := values.Get("action")
+				folderID := values.Get("folderID")
+
+				lineID := event.Source.UserID
+
+				// 在這裡可以根據 action 和 FolderID 做相應的處理
+				log.Printf("Action: %s, FolderID: %s", action, folderID)
+				if action == "openFolder" {
+					res, err := app.DriveService.ListSelectedFolderCarousel(ctx, lineID, folderID)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					if _, err := app.LineBotClient.ReplyMessage(
+						event.ReplyToken,
+						linebot.NewFlexMessage("打開資料夾", res.CarouselContainer),
+					).Do(); err != nil {
+						log.Println(err)
+						return
+					}
+				}
+				if action == "setFolder" {
+					err := app.DriveService.SetUploadPath(ctx, lineID, folderID)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("成功設定上傳路徑")).Do(); err != nil {
+						log.Println(err)
+					}
+					return
+
+				}
+			}
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
-					if message.Text == "login" {
+					if message.Text == "[登入]" {
 						lineID := event.Source.UserID
 						authURL := app.DriveService.LoginURL(ctx, lineID)
 						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(authURL)).Do(); err != nil {
@@ -88,7 +134,7 @@ func Callback(app *app.Application) gin.HandlerFunc {
 							return
 						}
 					}
-					if message.Text == "mydrive" {
+					if message.Text == "[我的雲端硬碟]" {
 						lineID := event.Source.UserID
 						res, err := app.DriveService.ListFolderCarousel(ctx, lineID, domainDrive.PersonalFolder)
 						if err != nil {
@@ -103,21 +149,33 @@ func Callback(app *app.Application) gin.HandlerFunc {
 							return
 						}
 					}
-					if message.Text == "shared" {
+					if message.Text == "[上傳路徑]" {
 						lineID := event.Source.UserID
-						res, err := app.DriveService.ListFolderCarousel(ctx, lineID, domainDrive.SharedFolder)
+						path, err := app.DriveService.GetUploadPath(ctx, lineID)
 						if err != nil {
 							log.Println(err)
 							return
 						}
-						if _, err := app.LineBotClient.ReplyMessage(
-							event.ReplyToken,
-							linebot.NewFlexMessage("測試Flex Carousel", res.CarouselContainer),
-						).Do(); err != nil {
+						if _, err = app.LineBotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(path)).Do(); err != nil {
 							log.Println(err)
-							return
 						}
+						return
 					}
+					//if message.Text == "shared" {
+					//	lineID := event.Source.UserID
+					//	res, err := app.DriveService.ListFolderCarousel(ctx, lineID, domainDrive.SharedFolder)
+					//	if err != nil {
+					//		log.Println(err)
+					//		return
+					//	}
+					//	if _, err := app.LineBotClient.ReplyMessage(
+					//		event.ReplyToken,
+					//		linebot.NewFlexMessage("測試Flex Carousel", res.CarouselContainer),
+					//	).Do(); err != nil {
+					//		log.Println(err)
+					//		return
+					//	}
+					//}
 					if message.Text == "flex carousel" {
 						contents := &linebot.CarouselContainer{
 							Type: linebot.FlexContainerTypeCarousel,
