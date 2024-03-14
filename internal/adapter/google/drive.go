@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"google.golang.org/api/drive/v3"
 	"log"
+	"os"
 )
 
 type GoogleDrive struct {
@@ -71,4 +72,26 @@ func (d *GoogleDrive) ListSharedFolders() (map[string]string, error) {
 	}
 	fmt.Println("nameM 共:", len(nameM), "個資料夾")
 	return nameM, nil
+}
+
+func (d *GoogleDrive) UploadFile(folderID string, fileName string, file *os.File) error {
+	defer file.Close()
+	// 指定目標資料夾的 ID
+	var parents []string
+	if folderID != "" {
+		parents = []string{folderID}
+	}
+
+	// 上傳文件
+	driveFile, err := d.Service.Files.Create(&drive.File{
+		Name:    fileName,
+		Parents: parents,
+	}).Media(file).Do()
+	if err != nil {
+		log.Println("Upload Error:", err)
+		return err
+	}
+
+	log.Printf("Got drive.File, err: %#v, %v", driveFile, err)
+	return nil
 }
